@@ -12,9 +12,9 @@ sidebar_position: 1
 
 ### Course tutors
 
-- Cosma George (George)
 - Paris Cristian-Tănase (Cristi)
 - Popescu Adrian (Adi)
+- Cosma George (George)
 
 ### Course structure
 
@@ -24,23 +24,33 @@ sidebar_position: 1
 1. Kubernetes
 1. Deployment + NGINX
 
-## Importance of containerization and orchestration
+## What is this course about?
 
-### Containerization in a nutshell
+The goal of this course is to teach you about **containers** and **orchestration with Kubernetes**.
+After this course, you will be able to deploy an application into production that can serve users
+worldwide with minimal latency and headache for you, and the development team (which may include you
+😎).
 
-### Why would someone care about containerization?
+<div style={{textAlign: 'justify'}}>
 
-Because we care about reproducible environments. Let's say you are developing a microservice
-application. So each component of your system resides in a separate, isolated environment. This
-means that if, for whatever reason, a runtime error occurs in your application, then that error
-is contained and the rest of the system remains unaffected.
+In brief, containerization is packaging an application and its dependencies into a standardized
+unit, known as a container. This container can then be easily moved between environments, ensuring
+consistency and reliability across different systems.
 
-Another important reason is we can use containers to package and deliver applications with an
-environment that contains all the required dependencies for them to function properly. This
-eliminates the problem of running an application on multiple systems, each of them with different
-versions of dependencies. The classic *works on my system* problem.
+We care about containerization because it allows developers to build, test, and deploy applications
+more efficiently. By isolating applications within containers, we can avoid conflicts between
+dependencies and ensure that the application runs consistently regardless of the underlying
+infrastructure.
 
-### What does it mean to orchestrate some containers?
+Orchestration is managing and coordinating multiple containers in a distributed environment. This
+includes tasks such as scaling containers up or down, load balancing traffic between containers,
+and ensuring high availability of the application. Kubernetes is a popular orchestration tool that
+helps automate these tasks, making it easier to manage containerized applications at scale.
+
+By the end of this course, you will have the skills and knowledge needed to deploy and manage
+containerized applications in a production environment.
+
+</div>
 
 ## Setup instruction for required tools
 
@@ -48,5 +58,7 @@ You need to install the following tools to solve the workshop:
 
 1. Docker and Docker Compose (see the [manual](https://docs.docker.com/manuals/))
 1. Kubectl (see the [manual](https://kubernetes.io/docs/tasks/tools/))
-1. Minikube (see the [manual](https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download))
-1. WSL2 (if you have Windows) (follow the [install instructions](https://learn.microsoft.com/en-us/windows/wsl/install))
+1. Minikube (see the
+   [manual](https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download))
+1. WSL2 (if you have Windows) (follow the [install
+   instructions](https://learn.microsoft.com/en-us/windows/wsl/install))
