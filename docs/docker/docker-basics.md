@@ -250,7 +250,7 @@ Also, **you are not allowed** to use Google to search how to do the pause/unpaus
 
 ## Let's create our own docker image
 
-### Why would we want to create multiple images for multiple containers
+### Why would we want to create multiple images for multiple containers?
 
 So far, we have used the containers interactively. Most of the times, however, this is not the case.
 A container is a separate unit of computing with a well defined purpose. That is, it should do one
@@ -267,7 +267,7 @@ Each of the above containers does one thing, and in the case of a backend or fro
 rest of the containers remain unaffected and running. Even if one container crashes, we can easily
 restart it without affecting the rest of the components.
 
-### Building a container
+### Building an image
 
 The flow of building an image and deploying a container looks like this:
 
@@ -294,7 +294,7 @@ Let's break down each line of the above document:
 
 - `FROM` - the first instruction in each Dockerfile, specifies the base container image, which means
 that subsequent modifications will add/remove from this image.
-- `ARG` - represents a variable that is available only when the container is built and can be 
+- `ARG` - represents a variable that is available only when the container is built and can be
 referenced throughout the Dockerfile.
 - `ENV` - sets an environment variable that will be available in the resulting container at
 runtime.
@@ -342,7 +342,7 @@ any other name we may come up with, we need to specify this to the `docker build
 Now that we have built our image, let's run `docker image ls`:
 
 ```bash
-
+cristian@cristianson:~/Desktop/ipw-docker$ docker image ls
 REPOSITORY         TAG       IMAGE ID       CREATED          SIZE                                                
 my-container       latest    7493be1166b0   13 minutes ago   369MB
 
@@ -467,13 +467,40 @@ Docker is beyond the scope of this workshop, but you can read more information h
 
 :::
 
-TODO next:
+:::tip
 
-diferenta de size dintre containere si imagini
+With time, a system can accumulate lots of local images, containers and build caches. That means
+that a user may end up with 0 space left on its laptop/PC. So, it is useful to see how much storage
+Docker occupies. In order to do this, run the `docker system df` command. Ask one of the course
+instructors for more details about the output and how you can free up disk space.
 
-docker system df
-docker prune...
-docker image list, docker image rm
-docker image inspect la partea de build
+:::
+
+## Exercise 2
+
+- Write a `Dockerfile.image` file containing the instructions for generating a container image
+based on `ubuntu`. The image should have the `24.04` version.
+- **NEW** Create a file called `test.txt` in the same folder with `Dockerfile.image`. Copy this file
+inside the container with some content inside.
+- Set an environment variable called **MESSAGE** to whatever message you want.
+- **NEW** Using `echo`, append the output of the environment variable to the copied file.
+- Using a specific command, create the image such as, when running it non-interactively, it
+outputs the contents of the file. Basically, add a default for executing the container.
+
+:::tip
+
+Have a look on the [Dockerfile reference](https://docs.docker.com/reference/dockerfile/) for the
+required commands.
+
+:::
+
 docker networks?
+docker volumes?
+docker env/docker compose env variables
+
 docker registries
+
+## Docker networks
+
+
+## Docker volumes
