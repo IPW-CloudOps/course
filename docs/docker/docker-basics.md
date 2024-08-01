@@ -269,6 +269,10 @@ restart it without affecting the rest of the components.
 
 ### Building a container
 
+The flow of building an image and deploying a container looks like this:
+
+![Docker image build](overview.drawio.png "Build process")
+
 In order to create our custom container, we need to create a custom template, that is, a custom
 docker image. To accomplish this, we will create a `Dockerfile`.
 
