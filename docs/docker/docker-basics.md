@@ -57,6 +57,18 @@ Dockerhub is a public image repository that contains prebuilt images that we can
 
 :::
 
+If we want to see the local images we have downloaded from Dockerhub or created locally, we can do
+`docker image ls`.
+
+```bash
+
+cristian@cristianson:~/Desktop/ipw-docker$ docker image ls
+REPOSITORY          TAG       IMAGE ID       CREATED       SIZE
+ubuntu              22.04     8a3cdc4d1ad3   4 weeks ago   77.9MB
+ubuntu              latest    35a88802559d   7 weeks ago   78.1MB
+
+```
+
 :::tip
 
 If you do not know what an argument does or what is the purpose of a command, use `man docker` or
@@ -235,3 +247,229 @@ immediately.
 Also, **you are not allowed** to use Google to search how to do the pause/unpause/container removal.
 💀 Use `docker help` and `grep` in order to find what you need. 😉
 :::
+
+## Let's create our own docker image
+
+### Why would we want to create multiple images for multiple containers
+
+So far, we have used the containers interactively. Most of the times, however, this is not the case.
+A container is a separate unit of computing with a well defined purpose. That is, it should do one
+single thing, and do it well.
+
+For example, we might have a web application with multiple components, and we have decided to split
+encapsulate each component in its own docker container. That is:
+
+- a database container
+- a backend container
+- a frontend container
+
+Each of the above containers does one thing, and in the case of a backend or frontend change, the
+rest of the containers remain unaffected and running. Even if one container crashes, we can easily
+restart it without affecting the rest of the components.
+
+### Building a container
+
+In order to create our custom container, we need to create a custom template, that is, a custom
+docker image. To accomplish this, we will create a `Dockerfile`.
+
+```text
+
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG DEBCONF_NONINTERACTIVE_SEEN=true
+
+ENV HELLO="hello"
+
+RUN apt-get update
+RUN apt-get install -y firefox
+
+```
+
+Let's break down each line of the above document:
+
+- `FROM` - the first instruction in each Dockerfile, specifies the base container image, which means
+that subsequent modifications will add/remove from this image.
+- `ARG` - represents a variable that is available only when the container is built and can be 
+referenced throughout the Dockerfile.
+- `ENV` - sets an environment variable that will be available in the resulting container at
+runtime.
+- `RUN` - runs a command when building the image. In this case, the resulting image will have
+`firefox` pre-installed.
+
+:::info
+
+You can read more about the differences between **ARG** and **ENV**
+[here](https://vsupalov.com/docker-arg-vs-env/).
+
+:::
+
+Once we have created the `Dockerfile`, we can build our image using the following command:
+`docker build -t my-container .`
+
+```bash
+
+cristian@cristianson:~/Desktop/ipw-docker$ docker build -t my-container .
+[+] Building 30.7s (7/7) FINISHED
+[...]
+ => exporting to image                                                                                                                                                                    1.0s 
+ => => exporting layers                                                                                                                                                                   0.9s 
+ => => writing image sha256:7493be1166b06d3521599a21c1ece1c5b4e2d438c3dacef0935e74d927aa875e                                                                                              0.0s 
+ => => naming to docker.io/library/my-container
+
+```
+
+Let's break down the arguments to the `docker build` command:
+
+- `-t` - specifies the tag of the image.
+- **my-container** is the assigned tag.
+- **.** - specifies that the Dockerfile is located in the current directory
+
+:::note
+
+In larger projects, we may have multiple Dockerfiles, each specifying the recipe for another image.
+It is useful, then, to name them differently. However, by default, Docker recognizes only files
+named `Dockerfile`. In order to have files named `Dockerfile.backend` or `Dockerfile.frontend` or
+any other name we may come up with, we need to specify this to the `docker build` command via the
+`-f` parameter. See `docker build --help` for more info.
+
+:::
+
+Now that we have built our image, let's run `docker image ls`:
+
+```bash
+
+REPOSITORY         TAG       IMAGE ID       CREATED          SIZE                                                
+my-container       latest    7493be1166b0   13 minutes ago   369MB
+
+```
+
+This is the confirmation that the build was successful. Let's create a brand new container from this
+image and verify if the environment variable has been correctly set up:
+
+```bash
+
+cristian@cristianson:~/Desktop/ipw-docker$ docker run -it my-container bash
+root@40b9e8dae8f1:/# echo $HELLO
+hello
+root@40b9e8dae8f1:/# 
+
+```
+
+Nice! We did it. We could have also checked that the image had the HELLO environment variable set by
+using the `docker image inspect` command.
+
+```bash
+
+cristian@cristianson:~/Desktop/ipw-docker$ docker image inspect my-container
+[
+    {
+        "Id": "sha256:7493be1166b06d3521599a21c1ece1c5b4e2d438c3dacef0935e74d927aa875e",
+        "RepoTags": [
+            "my-container:latest"
+        ],
+        "RepoDigests": [],
+        "Parent": "",
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2024-08-01T13:51:50.003474082+03:00",
+        "Container": "",
+        "ContainerConfig": {
+            "Hostname": "",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": null,
+            "Cmd": null,
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "",
+            "Entrypoint": null,
+            "OnBuild": null,
+            "Labels": null
+        },
+        "DockerVersion": "",
+        "Author": "",
+        "Config": {
+            "Hostname": "",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "HELLO=hello"
+            ],
+            "Cmd": [
+                "/bin/bash"
+            ],
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "",
+            "Entrypoint": null,
+            "OnBuild": null,
+            "Labels": {
+                "org.opencontainers.image.ref.name": "ubuntu",
+                "org.opencontainers.image.version": "22.04"
+            }
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 369369133,
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/p323vqywxcogfgl6sadeqwrsc/diff:/var/lib/docker/overlay2/372a31c779498a88a96829322ca93f496d0cf79a3a23f4c46b276f6670199ccc/diff",
+                "MergedDir": "/var/lib/docker/overlay2/aakuflif4l5nqvh24azlltsw4/merged",
+                "UpperDir": "/var/lib/docker/overlay2/aakuflif4l5nqvh24azlltsw4/diff",
+                "WorkDir": "/var/lib/docker/overlay2/aakuflif4l5nqvh24azlltsw4/work"
+            },
+            "Name": "overlay2"
+        },
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:931b7ff0cb6f494b27d31a4cbec3efe62ac54676add9c7469560302f1541ecaf",
+                "sha256:7b75401998b8840828c675a5956ab91e405aec86d363e76b4a0d645bb1a8414e",
+                "sha256:c7e0e739bfbbcc8f59a777e8bb57b845ece9598a8a1df45833dc215104ad7dd1"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2024-08-01T13:51:50.961377181+03:00"
+        }
+    }
+]
+
+```
+
+We can see that in the `Env` section we have our **HELLO** env variable.
+
+:::info
+
+Each Docker image is comprised of layers. Each command in the Dockerfile basically adds a new layer
+that can be cached and later be used in other builds. Talking about the very inner workings of
+Docker is beyond the scope of this workshop, but you can read more information here:
+
+- [Docker storage driver](https://docs.docker.com/storage/storagedriver/)
+- [Docker image optimization](https://cloudyuga.guru/blogs/understanding-docker-image-optimization-techniques-for-effective-deployment/#:~:text=Minimize%20The%20Number%20Of%20Layers,-In%20this%20technique&text=Each%20instruction%20like%20FROM%2C%20COPY,size%20of%20the%20resulting%20image.)
+- [Number of docker layers](https://stackoverflow.com/questions/47079114/should-i-minimize-the-number-of-docker-layers)
+
+:::
+
+TODO next:
+
+diferenta de size dintre containere si imagini
+
+docker system df
+docker prune...
+docker image list, docker image rm
+docker image inspect la partea de build
+docker networks?
+docker registries
