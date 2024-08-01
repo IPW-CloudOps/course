@@ -217,3 +217,21 @@ We can see that the container is no longer running. Sometimes the stop command t
 do not abort it. Also, if we pass the `-a` argument to the `docker stop` command, it will also list
 the containers that were stopped. We can see that the first container, **zen_hodgkin** is the one
 we stopped earlier.
+
+## Exercise 1
+
+- Start a container of your choice in background. Name it 'IPW-ROCKS'.
+- Once started, connect to the container and install the `fzf` tool.
+- Disconnect from the container.
+- **NEW!** Try to pause and unpause the container. After each command, do a `docker ps`.
+- Stop the container.
+- **NEW** Completely remove the stopped container.
+
+:::tip
+
+You must start your container with a long running command or script, otherwise it will exit
+immediately.
+
+Also, **you are not allowed** to use Google to search how to do the pause/unpause/container removal.
+💀 Use `docker help` and `grep` in order to find what you need. 😉
+:::
