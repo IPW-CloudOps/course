@@ -500,7 +500,216 @@ docker env/docker compose env variables
 
 docker registries
 
-## Docker networks
+## Docker networking
+
+The Docker networking subsystem is plugable and uses a variety of drivers in order to offer implicit
+behavior for network components. Why do we care about the networking subsystem? Because in order to
+build useful apps, we need to make the containers communicate with each other. Moreover, we may
+even want to isolate the traffic between certain containers and create sub-networks.
+
+:::info
+
+You can read for about docker networking [here](https://docs.docker.com/network/).
+
+:::
+
+Containers residing in the same network can communicate with each other using **named DNS**. This
+means that we can access a container using its name, and not necessarily its IP. In order to
+communicate with the outside world (the host machine, containers which are outside the network),
+you must expose [ports](https://www.mend.io/blog/how-to-expose-ports-in-docker/).
+
+Moving forward, we are going to demonstrate how the `bridge` networks work in Docker. You can read
+more about them [here](https://docs.docker.com/network/drivers/bridge/). We are going to start two
+containers and try to send pings from one another to see if anything happens. In order to do this,
+it is easier if you open two separate terminal tabs.
+
+```bash
+
+cristian@cristianson:~$ docker container run --name first -it alpine ash
+/ # 
 
 
-## Docker volumes
+```
+
+```bash
+
+cristian@cristianson:~$ docker container run --name second -it alpine ash
+/ # 
+
+```
+
+This time, we have started two alpine containers, because they are more lightweight than the ubuntu
+ones. `ash` is the default shell for the `alpine` containers. Now, if we try to ping from the `first`
+container the `second` container, we see that this does not work. Same story if we try the same
+thing from the `second` container.
+
+```bash
+
+cristian@cristianson:~$ docker container run --name first -it alpine ash
+/ # ping second
+ping: bad address 'second'
+/ # 
+
+```
+
+```bash
+
+cristian@cristianson:~$ docker container run --name second -it alpine ash
+/ # ping first
+ping: bad address 'first'
+/ # 
+
+```
+
+If we do an `ifconfig` inside one of the containers, we see that there are only two networks
+available to us right now:
+
+- lo
+- eth0
+
+You can ask the course instructors about more information about these two networks.
+
+```bash
+
+/ # ifconfig
+eth0      Link encap:Ethernet  HWaddr 02:42:AC:11:00:02  
+          inet addr:172.17.0.2  Bcast:172.17.255.255  Mask:255.255.0.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:67 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:4 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:8933 (8.7 KiB)  TX bytes:216 (216.0 B)
+
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+/ # 
+
+
+```
+
+Let's make these containers communicate! First, create a docker network object:
+
+```bash
+
+cristian@cristianson:~$ docker network create -d bridge my-bridge
+8508d7585c6b8145da8afac4bf159de14293c4fd11ebcf2662e3367fc46d92c9
+cristian@cristianson:~$ docker network ls
+NETWORK ID     NAME        DRIVER    SCOPE
+9ccf3f0b6346   bridge      bridge    local
+1e22e9263c46   host        host      local
+8508d7585c6b   my-bridge   bridge    local
+294f9f02c5c1   none        null      local
+
+```
+
+:::tip
+
+Use `docker network --help` to find out more about the command. Ask one of the course instructors
+for more information if necessary.
+
+:::
+
+Listing the available networks with `docker network ls` shows the newly created `my-bridge` network
+of type `bridge`. Now, let's connect the two containers to the network. Keep in mind we are adding
+the containers to the network while they are still running. We could have also added them at creation.
+
+```bash
+
+cristian@cristianson:~$ docker network connect my-bridge first
+cristian@cristianson:~$ docker network connect my-bridge second
+
+```
+
+It was that easy! Running an `ifconfig` now yields:
+
+```bash
+
+/ # ifconfig
+eth0      Link encap:Ethernet  HWaddr 02:42:AC:11:00:02  
+          inet addr:172.17.0.2  Bcast:172.17.255.255  Mask:255.255.0.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:129 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:4 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:18254 (17.8 KiB)  TX bytes:216 (216.0 B)
+
+eth1      Link encap:Ethernet  HWaddr 02:42:AC:14:00:02  
+          inet addr:172.20.0.2  Bcast:172.20.255.255  Mask:255.255.0.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:66 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:9143 (8.9 KiB)  TX bytes:0 (0.0 B)
+
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+
+```
+
+We have one extra network interface, `eth1`. Let's ping again the `second` container from `first`.
+
+```bash
+
+/ # ping -c2 second
+PING second (172.20.0.3): 56 data bytes
+64 bytes from 172.20.0.3: seq=0 ttl=64 time=0.328 ms
+64 bytes from 172.20.0.3: seq=1 ttl=64 time=0.181 ms
+
+--- second ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.181/0.254/0.328 ms
+/ # 
+
+```
+
+Nice! This time everything works as expected. Observe the fact that we have used the container's
+name and not the IP. You can stop and remove the containers now.
+
+## Exercise 3
+
+- Create a network called `ipw` of type `bridge`.
+- **NEW** Create two containers and assign them to the `ipw` network at creation.
+- Check if the containers can communicate.
+- **NEW** In another terminal tab, do `docker network inspect ipw` and comment on the output with
+one of the course instructors.
+- **NEW** Do a `cat /etc/hosts` in each container and comment on the output with one of the course
+instructors.
+- Stop the containers, remove them and also remove the newly created network.
+
+:::warning
+
+You are not allowed to use Google! Use `docker <command_name> --help` whenever you can to get more
+information, or ask one of the course instructors.
+
+:::
+
+## Docker persistence (a.k.a do not lose that data)
+
+
+
+
+
+
+:::note
+
+This course borrows many things, as well as its structure from:
+
+- [SCGC Pages UPB](https://scgc.pages.upb.ro/cloud-courses/docs/security/containers)
+- [Mobylab Pages UPB](https://mobylab.docs.crescdi.pub.ro/docs/softwareDevelopment/laboratory1/)
+
+This note is here then to give credits to the teams that created the above resources. For more
+information on Docker and other things, feel free to check them out!
+
+:::
