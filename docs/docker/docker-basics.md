@@ -360,8 +360,8 @@ root@40b9e8dae8f1:/#
 
 ```
 
-Nice! We did it. We could have also checked that the image had the HELLO environment variable set by
-using the `docker image inspect` command.
+Nice! We did it. We could have also checked that the image had the **HELLO** environment variable
+set by using the `docker image inspect` command.
 
 ```bash
 
@@ -493,12 +493,6 @@ Have a look on the [Dockerfile reference](https://docs.docker.com/reference/dock
 required commands.
 
 :::
-
-docker networks?
-docker volumes?
-docker env/docker compose env variables
-
-docker registries
 
 ## Docker networking
 
@@ -695,12 +689,212 @@ information, or ask one of the course instructors.
 
 :::
 
-## Docker persistence (a.k.a do not lose that data)
+## Docker persistence
 
+In Docker, data we create or edit inside a container is not persisted in the outside world. This is
+due to the way Docker works and the particularities of its filesystem. Let's illustrate this:
 
+:::info
 
+You can read more about this here:
 
+- [MobyLab](https://mobylab.docs.crescdi.pub.ro/docs/softwareDevelopment/laboratory1/persistence)
+- [OverlaysFs](https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt)
+- [AuFs](https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt)
 
+:::
+
+### Volumes
+
+In order to persist data from a container, Docker uses a mechanism called **volumes**. These volumes
+represent a mapping between files in the container and files on the host system. The major advantage
+of Docker volume is the fact that they are not tied to the lifetime of the container they are
+attached to. This means that even if a container crashes, stops or is deleted, its data will still
+persist in the outside world, because volumes are an outside abstraction that are just linked to
+container, but have a standalone lifetime. Other advantages of volumes include:
+
+- easy migration between containers and machines
+- can be configured via the CLI or Docker API
+- can be shared between multiple container, which means that volumes represent a way of
+*communication* via storage
+- by employing different storage drivers, volumes can be used to persist data on remote machines,
+cloud environments, network drives etc.
+
+Volumes managed by the Docker engine are also called **named volumes**. There are multiple ways of
+defining volumes:
+
+- by using the **VOLUME** command inside the Dockerfile when creating the image, see the
+[Docker reference](https://docs.docker.com/reference/dockerfile/#volume)
+- at runtime, when creating a volume
+- with a docker compose file (more on that later) and the docker volume API: `docker volume create`,
+`docker volume ls`, etc.
+
+Let's see how we can create a volume a runtime with the following command:
+
+```bash
+
+cristian@cristianson:~$ docker container run --name ipw -d -v /test alpine sh -c 'ping 8.8.8.8 > /test/ping.txt'
+3e6beddbd15e43365be7f863023a43cffcdbab86916d78c553ec0822b58f9b6a4
+cristian@cristianson:~$ docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS        PORTS     NAMES
+3e6beddbd15e   alpine    "sh -c 'ping 8.8.8.8…"   2 seconds ago   Up 1 second             ipw
+
+```
+
+The `-v` argument followed by the volume name defines a volume at the `/test` path inside the
+container. Every file we create or modify in that folder will basically alter the volume. Also note
+that we are using a long running command, `sh -c 'ping 8.8.8.8 > /test/ping.txt'`, in order to
+continuously append data to the file.
+
+Now, if we do a `docker volume ls` we should see:
+
+```bash
+
+cristian@cristianson:~$ docker volume ls
+DRIVER    VOLUME NAME
+local     a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065
+
+```
+
+Let's see if we can get more information about our newly created volume:
+
+```bash
+
+cristian@cristianson:~$ docker volume inspect a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065
+[
+    {
+        "CreatedAt": "2024-08-02T12:20:22+03:00",
+        "Driver": "local",
+        "Labels": {
+            "com.docker.volume.anonymous": ""
+        },
+        "Mountpoint": "/var/lib/docker/volumes/a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065/_data",
+        "Name": "a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+
+```
+
+The `Mountpoint` label specifies the location on the host machine were the volume data is stored. If
+we list the contents of that folder than we would get the following output:
+
+```bash
+
+cristian@cristianson:~$ sudo ls  /var/lib/docker/volumes/a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065/_data
+[sudo] password for cristian: 
+ping.txt
+
+```
+
+Doing a `cat` inside the file we get:
+
+```bash
+
+cristian@cristianson:~$ sudo cat  /var/lib/docker/volumes/a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065/_data/ping.txt
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: seq=0 ttl=57 time=20.006 ms
+64 bytes from 8.8.8.8: seq=1 ttl=57 time=20.352 ms
+64 bytes from 8.8.8.8: seq=2 ttl=57 time=18.195 ms
+64 bytes from 8.8.8.8: seq=3 ttl=57 time=18.668 ms
+
+```
+
+Now, if we stop and remove the container, with
+
+- `docker container stop ipw`
+- `docker container rm ipw`
+
+we see that the volume data is still intact, event though the container was destroyed:
+
+```bash
+
+cristian@cristianson:~$ sudo cat  /var/lib/docker/volumes/a5ec5808eb58a6cc5551bd5f979f038f99015668f79314bec28ada192880d065/_data/ping.txt
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: seq=0 ttl=57 time=20.006 ms
+64 bytes from 8.8.8.8: seq=1 ttl=57 time=20.352 ms
+64 bytes from 8.8.8.8: seq=2 ttl=57 time=18.195 ms
+64 bytes from 8.8.8.8: seq=3 ttl=57 time=18.668 ms
+
+```
+
+This proves the fact that the volume and container have separate lifetimes.
+
+### Bind mounts
+
+Besides volumes, we also have the concept of a **bind mount**. These are somewhat similar, the main
+difference being that bind mounts are not managed by Docker, but by the file system of the host
+machine and can be accessed by any external process which does not belong to Docker. A bind mount is,
+in its purest form, a path to a location in the host machine, while a volume is a Docker abstraction
+that behind the scenes uses bind mounts. All in all, bind mounts allow us to **import** and access
+folders, files and paths from the host machine in our Docker container and persist any modification.
+
+:::info
+
+You can read more about volumes and bind mounts [here](https://docs.docker.com/storage/bind-mounts/).
+
+:::
+
+We can add a bind mount to a container in a similar fashion, when we are creating it.
+
+```bash
+
+cristian@cristianson:~/Desktop/ipw-docker$ docker container run --name first -d --mount type=bind,source=/home/cristian/Desktop/ipw-docker/test.txt,target=/root/test.txt alpine sh -c 'ping 8.8.8.8 > /root/test.txt'
+8438bfb2f16d940770ed3e4ba48cb67428e78ff530ec73de859a5f168d36e8ab
+cristian@cristianson:~/Desktop/ipw-docker$ cat test.txt 
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: seq=0 ttl=57 time=21.369 ms
+64 bytes from 8.8.8.8: seq=1 ttl=57 time=20.204 ms
+64 bytes from 8.8.8.8: seq=2 ttl=57 time=20.705 ms
+64 bytes from 8.8.8.8: seq=3 ttl=57 time=18.625 ms
+64 bytes from 8.8.8.8: seq=4 ttl=57 time=20.626 ms
+64 bytes from 8.8.8.8: seq=5 ttl=57 time=20.248 ms
+64 bytes from 8.8.8.8: seq=6 ttl=57 time=18.777 ms
+cristian@cristianson:~/Desktop/ipw-docker$ docker container stop first
+first
+cristian@cristianson:~/Desktop/ipw-docker$ docker container rm first
+first
+cristian@cristianson:~/Desktop/ipw-docker$ cat test.txt 
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: seq=0 ttl=57 time=21.369 ms
+64 bytes from 8.8.8.8: seq=1 ttl=57 time=20.204 ms
+64 bytes from 8.8.8.8: seq=2 ttl=57 time=20.705 ms
+64 bytes from 8.8.8.8: seq=3 ttl=57 time=18.625 ms
+64 bytes from 8.8.8.8: seq=4 ttl=57 time=20.626 ms
+64 bytes from 8.8.8.8: seq=5 ttl=57 time=20.248 ms
+64 bytes from 8.8.8.8: seq=6 ttl=57 time=18.777 ms
+
+```
+
+This is a lot to take in, so let's break it down. We are creating a mount by specifying the `--mount`
+argument, of `type=bind`, we specify the source file from the host system that we want to share with
+our container, and the target file in the container, which does not necessarily need to exist.
+
+We see that the running ping command outputs into the file on our local system, and even if we delete
+the container and remove it, the data persists.
+
+### Exercise 4
+
+- Using a container image of your choice, create a container which has a volume that will contain
+the output of the `ps -aux` command inside.
+- **NEW** Mount a read-only bind mount into the container which contains an image of your choice.
+
+### Exercise 5 (wrapping things up)
+
+- Inspect the source code in [this repository](https://github.com/IPW-CloudOps/simple-node-app) and
+create a Dockerfile that builds a container image for that application.
+- Run the newly created container image to make sure everything works.
+
+:::info
+
+This task is intentionally written ambiguous in order to make you search the official documentation,
+ask the course instructors questions and familiarize yourself with what a DevOps engineer has to do
+on a day-to-day basis. So do not feel bad if, at first, the task seems hard. Do your best, solve it
+at your own pace, collaborate with your colleagues, and, most importantly, have fun while learning
+new things!
+
+:::
 
 :::note
 
