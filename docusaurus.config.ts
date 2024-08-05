@@ -1,6 +1,28 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+
+
+function removeUnlistedRawItems(items) {
+  return items.filter(item => {
+    const frontMatter: object = item.frontMatter;
+    if(!frontMatter)return true;
+    if(!("unlisted" in frontMatter))return true;
+
+    if(frontMatter.unlisted === true)return false;
+  })
+}
+
+// TODO: you'd have to recursively search pages and categories for each category that is unlisted
+//        for now, you have to set all subcategories and subpages with `unlisted: true`
+function removeUnlistedRawCategories(categories) {
+  Object.keys(categories).forEach(category => {
+    const customProps: object = categories[category].customProps;
+    if(!customProps)return;
+    if(!("unlisted" in customProps))return;
+    if(customProps.unlisted === true)delete categories[category];
+  });
+}
 
 const config: Config = {
   title: 'IPW CloudOps',
@@ -35,6 +57,12 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          sidebarItemsGenerator: async ({ defaultSidebarItemsGenerator, ...args }) => {
+            removeUnlistedRawCategories(args.categoriesMetadata);
+            args.docs = removeUnlistedRawItems(args.docs);
+            const sidebarItems = await defaultSidebarItemsGenerator(args);
+            return sidebarItems;
+          },
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
