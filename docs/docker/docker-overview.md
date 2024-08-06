@@ -1,7 +1,7 @@
 ---
 id: docker-overview
-title: Introduction
-description: General Overview of Docker
+title: Introduction and Setup
+description: General Overview of Docker and Setup
 slug: /docker/overview
 sidebar_position: 1
 ---

@@ -3,7 +3,7 @@ id: docker-basics
 title: Docker Basics
 description: Essential Docker CLI commands
 slug: /docker/basics
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 ## Starting a container
@@ -880,7 +880,7 @@ the container and remove it, the data persists.
 the output of the `ps -aux` command inside.
 - **NEW** Mount a read-only bind mount into the container which contains an image of your choice.
 
-### Exercise 5 (wrapping things up)
+## Exercise 5 (wrapping things up)
 
 - Inspect the source code in [this repository](https://github.com/IPW-CloudOps/simple-node-app) and
 create a Dockerfile that builds a container image for that application.
