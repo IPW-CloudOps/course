@@ -61,7 +61,7 @@ Kubernetes uses a master-worker architecture:
    - Can contain one or more containers
    - Share network namespace and storage
 
-1. [Replica Sets](./resources/replicasets.md.md):
+1. [Replica Sets](./resources/replicasets.md):
    - Describe the desired state for a set of pods
    - Provide basic scaling and self-healing mechanisms
 
