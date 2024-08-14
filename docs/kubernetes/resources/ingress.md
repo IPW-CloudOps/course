@@ -28,7 +28,7 @@ An **Ingress** in Kubernetes is an API object that manages external access to th
 
 Here is a basic example of a Kubernetes Ingress specification in YAML:
 
-'''
+```
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -45,16 +45,16 @@ spec:
             name: example-service
             port:
               number: 80
-'''
+```
 
 This Ingress routes traffic to the `example-service` service when accessing `example.com`.
 
 Save this to a file `ingress.yaml` and create the resource using `kubectl apply -f ingress.yaml`:
 
-'''
+```
 > kubectl apply -f ingress.yaml
 ingress.networking.k8s.io/example-ingress created
-'''
+```
 
 ## Ingress Spec Explanation
 
@@ -87,8 +87,8 @@ ingress.networking.k8s.io/example-ingress created
 
 Make sure your cluster has an Ingress controller installed. If using Minikube, you can enable the Nginx Ingress controller using:
 
-'''
+```
 minikube addons enable ingress
-'''
+```
 
 :::
