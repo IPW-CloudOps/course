@@ -44,6 +44,36 @@ Save this to a file named `configmap.yaml` and create the ConfigMap using:
 > kubectl apply -f configmap.yaml
 ```
 
+You can view all config maps and read their contents using:
+
+```
+> kubectl get configmaps
+NAME                DATA   AGE
+example-configmap   1      54s
+kube-root-ca.crt    1      46m
+
+> kubectl describe configmaps example-configmap
+Name:         example-configmap
+Namespace:    default
+Labels:       <none>
+Annotations:  <none>
+
+Data
+====
+config.json:
+----
+{
+  "key1": "value1",
+  "key2": "value2"
+}
+
+
+BinaryData
+====
+
+Events:  <none>
+```
+
 ### Using ConfigMaps in Pods
 
 To use a ConfigMap in a pod, you can reference it in the pod specification. For example:
@@ -67,6 +97,12 @@ spec:
 ```
 
 In this example, the ConfigMap `example-configmap` is mounted as a volume in the pod at `/etc/config`.
+
+After you `apply` the pod, you can see the config by `cat`-ing the file contents:
+
+```bash
+> kubectl exec -it configmap-pod -- cat /etc/config/config.json
+```
 
 ## Understanding Secrets
 
