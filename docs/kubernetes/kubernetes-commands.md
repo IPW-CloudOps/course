@@ -4,6 +4,7 @@ title: Kubernetes Commands
 description: Essential kubectl commands
 slug: /kubernetes/commands
 sidebar_position: 4
+unlisted: true
 ---
 
 # Kubernetes Commands
